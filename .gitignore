@@ -1,5 +1,5 @@
 .ccls-cache/
-build/
+build*/
 Debug/
 Release/
 *.o

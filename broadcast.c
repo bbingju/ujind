@@ -19,6 +19,7 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
 int broadcast(const char* filename)
 {
     ma_result result;
+#if 0
     ma_decoder decoder;
     ma_device_config deviceConfig;
     ma_device device;
@@ -54,6 +55,36 @@ int broadcast(const char* filename)
 
     ma_device_uninit(&device);
     ma_decoder_uninit(&decoder);
+
+#else
+
+    ma_engine engine;
+    ma_engine_config engine_config;
+    /* ma_sound sound; */
+
+    result = ma_engine_init(NULL, &engine);
+    if (result != MA_SUCCESS) {
+	fprintf(stderr, "ma_engine_init failed (%d)\n", result);
+	return -1;
+    }
+
+    /* result = ma_sound_init_from_file(&engine, filename, 0, NULL, NULL, &sound); */
+    /* if (result != MA_SUCCESS) { */
+    /* 	fprintf(stderr, "ma_sound_init_from_file (%d)\n", result); */
+    /* 	return -1; */
+    /* } */
+
+    /* ma_sound_start(&sound); */
+    ma_engine_play_sound(&engine, filename, NULL);
+
+    printf("Press Enter to quit...");
+    getchar();
+
+    /* ma_sound_uninit(&sound); */
+    ma_engine_uninit(&engine);
+
+
+#endif	/* 0 */
 
     return 0;
 }
