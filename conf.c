@@ -100,7 +100,7 @@ char *conf__lte_modem_fake_number()
     if (!number.ok) {
 	LOGW("cannot read lte_modem.fake_number\n");
     } else {
-	LOGD("lte_modem.number: %s\n", number.u.s);
+	LOGD("lte_modem.fake_number: %s\n", number.u.s);
     }
 
     return number.u.s;
@@ -114,7 +114,7 @@ char *conf__lte_modem_serial_port()
     if (!port.ok) {
 	LOGW("cannot read lte_modem.serial_port\n");
     } else {
-	LOGD("lte_modem.number: %s\n", port.u.s);
+	LOGD("lte_modem.serial_port: %s\n", port.u.s);
     }
 
     return port.u.s;
