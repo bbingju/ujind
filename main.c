@@ -229,10 +229,7 @@ void _on_received_lte_at(struct context *ctx, char *key, char *value)
 int main(int argc, char *argv[])
 {
 #if USE_LTE_MODEM
-    if (lte_at__open(&context, _on_received_lte_at) < 0) {
-	return -1;
-    }
-
+    lte_at__open(&context, _on_received_lte_at);
     lte_at__send(&context, "AT$$SHORT_NUM?");
 #endif
 

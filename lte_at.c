@@ -20,7 +20,6 @@ int lte_at__open(struct context *ctx, lte_at__receive_cb_f cb)
 {
     ctx->lte_at = serial_open(DEFAULT_MODEM_PORT, DEFAULT_MODEM_BOARDRATE);
     if (!ctx->lte_at) {
-	LOGE("serial_open error\n");
 	return -1;
     }
 
@@ -39,6 +38,10 @@ int lte_at__send(struct context *ctx, const char* cmd)
     char readbuf[1024] = { 0 };
     char *str1, *str2, *token, *subtoken;
     char *saveptr1, *saveptr2;
+
+    if (!ctx->lte_at) {
+	return -1;
+    }
 
     int ret = serial_write(ctx->lte_at, (const unsigned char *) cmd, strlen(cmd));
     if (ret < 0) {
