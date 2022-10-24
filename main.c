@@ -78,7 +78,7 @@ static char *_get_request_topic(struct context* ctx)
 #endif
 
     if (!ctx->lte_modem_number) {
-	ctx->lte_modem_number = (char *) conf__lte_modem_number();
+	ctx->lte_modem_number = conf__lte_modem_fake_number();
     }
 
     if (!ctx->req_topic) {
@@ -98,7 +98,7 @@ static char *_get_response_topic(struct context* ctx)
 #endif
 
     if (!ctx->lte_modem_number) {
-	ctx->lte_modem_number = (char *) conf__lte_modem_number();
+	ctx->lte_modem_number = conf__lte_modem_fake_number();
     }
 
     if (!ctx->res_topic) {

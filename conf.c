@@ -47,13 +47,13 @@ static toml_table_t* _parse(const char *conf_file)
     } while (0);
 
 
-const char *conf__server_host()
+char *conf__server_host()
 {
     CHECK_TBL_INIT();
 
     toml_datum_t host = toml_string_in(toml_table_in(conf_tbl, "server"), "host");
     if (!host.ok) {
-	fprintf(stderr, "cannot read server.host\n");
+	LOGW("cannot read server.host\n");
     } else {
 	LOGD("server.host: %s\n", host.u.s);
     }
@@ -68,9 +68,8 @@ int conf__server_port()
 
     toml_datum_t port = toml_int_in(toml_table_in(conf_tbl, "server"), "port");
     if (!port.ok) {
-	fprintf(stderr, "cannot read server.port\n");
+	LOGW("cannot read server.port\n");
     } else {
-	/* printf("server.port: %d\n", port.u.b); */
 	LOGD("server.port: %d\n", port.u.b);
     }
 
@@ -78,13 +77,13 @@ int conf__server_port()
 }
 
 
-const char *conf__mqtt_broker_host()
+char *conf__mqtt_broker_host()
 {
     CHECK_TBL_INIT();
 
     toml_datum_t host = toml_string_in(toml_table_in(conf_tbl, "mqtt_broker"), "host");
     if (!host.ok) {
-	fprintf(stderr, "cannot read mqtt_broker.host\n");
+	LOGW("cannot read mqtt_broker.host\n");
     } else {
 	LOGD("mqtt_broker.host: %s\n", host.u.s);
     }
@@ -93,16 +92,45 @@ const char *conf__mqtt_broker_host()
 }
 
 
-const char *conf__lte_modem_number()
+char *conf__lte_modem_fake_number()
 {
     CHECK_TBL_INIT();
 
-    toml_datum_t number = toml_string_in(toml_table_in(conf_tbl, "lte_modem"), "number");
+    toml_datum_t number = toml_string_in(toml_table_in(conf_tbl, "lte_modem"), "fake_number");
     if (!number.ok) {
-	fprintf(stderr, "cannot read lte_modem.number\n");
+	LOGW("cannot read lte_modem.fake_number\n");
     } else {
-	printf("lte_modem.number: %s\n", number.u.s);
+	LOGD("lte_modem.number: %s\n", number.u.s);
     }
 
     return number.u.s;
+}
+
+char *conf__lte_modem_serial_port()
+{
+    CHECK_TBL_INIT();
+
+    toml_datum_t port = toml_string_in(toml_table_in(conf_tbl, "lte_modem"), "serial_port");
+    if (!port.ok) {
+	LOGW("cannot read lte_modem.serial_port\n");
+    } else {
+	LOGD("lte_modem.number: %s\n", port.u.s);
+    }
+
+    return port.u.s;
+}
+
+int conf__lte_modem_serial_baudrate()
+{
+    CHECK_TBL_INIT();
+
+    const toml_table_t *arr = toml_table_in(conf_tbl, "lte_modem");
+    toml_datum_t baudrate = toml_int_in(arr, "serial_baudrate");
+    if (!baudrate.ok) {
+	LOGW("cannot read lte_modem.serial_baudrate\n");
+    } else {
+	LOGD("lte_modem.serial_baudrate: %d\n", baudrate.u.b);
+    }
+
+    return baudrate.u.b;
 }
