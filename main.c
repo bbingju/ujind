@@ -23,7 +23,6 @@
 
 
 /* #define DEFAULT_VAL_SERVER_ADDRESS "121.191.71.114" */
-/* #define DEFAULT_VAL_SERVER_ADDRESS "192.168.0.65" */
 
 /* const char* ENV_KEY_SERVER_ADDRESS = "UJIN_SERVER_ADDR"; */
 
@@ -113,14 +112,14 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
     struct context *ctx = obj;
     int rc;
 
-    printf("on_connect: %s\n", mosquitto_connack_string(reason_code));
+    LOGI("%s\n", mosquitto_connack_string(reason_code));
     if (reason_code != 0) {
 	mosquitto_disconnect(mosq);
     }
 
     rc = mosquitto_subscribe(mosq, NULL, _get_request_topic(ctx), 1);
     if (rc != MOSQ_ERR_SUCCESS) {
-	fprintf(stderr, "Error subscribing: %s\n", mosquitto_strerror(rc));
+	LOGE("Error subscribing: %s\n", mosquitto_strerror(rc));
 	mosquitto_disconnect(mosq);
     }
 }
@@ -132,13 +131,13 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
     bool have_subscription = false;
 
     for (i = 0; i < qos_count; i++){
-	printf("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+	LOGI("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
 	if (granted_qos[i] <= 2){
 	    have_subscription = true;
 	}
     }
     if (have_subscription == false) {
-	fprintf(stderr, "Error: All subscriptions rejected.\n");
+	LOGE("Error: All subscriptions rejected.\n");
 	mosquitto_disconnect(mosq);
     }
 }
@@ -152,7 +151,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     char *fn = NULL;
     int ret;
 
-    printf("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
+    LOGD("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
 
     if (strlen((char *)msg->payload) < 1) {
 	LOGW("No data in the payload\n");
@@ -197,7 +196,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 	    int rc = mosquitto_publish(ctx->mosq, NULL, _get_response_topic(ctx),
 				       strlen(retval) + 1, retval, 0, false);
 	    if (rc != MOSQ_ERR_SUCCESS) {
-		fprintf(stderr, "%s\n", mosquitto_strerror(rc));
+		LOGE("%s\n", mosquitto_strerror(rc));
 	    }
 	    break;
 	}
@@ -221,7 +220,7 @@ void _on_received_lte_at(struct context *ctx, char *key, char *value)
 	if (ctx->lte_modem_number)
 	    free(ctx->lte_modem_number);
 	ctx->lte_modem_number = strdup(value);
-	LOGI("Modem number = %s\n", ctx->lte_modem_number);
+	LOGI("Modem real number = %s\n", ctx->lte_modem_number);
     }
 }
 
@@ -248,7 +247,7 @@ int main(int argc, char *argv[])
     int rc = mosquitto_connect(context.mosq, conf__mqtt_broker_host(), 1883, 60);
     if(rc != MOSQ_ERR_SUCCESS){
 	mosquitto_destroy(context.mosq);
-	fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
+	LOGE("Error: %s\n", mosquitto_strerror(rc));
 	return 1;
     }
 
