@@ -4,9 +4,7 @@ After=network.target sound.target
 
 [Service]
 User=root
-ExecStartPre=-/bin/sleep 3
 ExecStart=/usr/bin/ujind
-# Restart=on-failure
 Restart=always
 RestartSec=3s
 
