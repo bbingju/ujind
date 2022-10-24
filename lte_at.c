@@ -1,13 +1,11 @@
 #include "lte_at.h"
+#include "conf.h"
 
 #define LOG_MODULE_NAME "lte_at"
 #define MAX_LOG_LEVEL DEBUG_LOG_LEVEL
 #include "logger.h"
 
 #include <string.h>
-
-const char* DEFAULT_MODEM_PORT = "/dev/ttyUSB2";
-const int DEFAULT_MODEM_BOARDRATE = 115200;
 
 static lte_at__receive_cb_f _on_received_cb;
 
@@ -18,7 +16,8 @@ static void _default_on_received(struct context *ctx, char *key, char *value)
 
 int lte_at__open(struct context *ctx, lte_at__receive_cb_f cb)
 {
-    ctx->lte_at = serial_open(DEFAULT_MODEM_PORT, DEFAULT_MODEM_BOARDRATE);
+    ctx->lte_at = serial_open(conf__lte_modem_serial_port(),
+			      conf__lte_modem_serial_baudrate());
     if (!ctx->lte_at) {
 	return -1;
     }
