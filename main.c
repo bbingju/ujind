@@ -257,8 +257,9 @@ int main(int argc, char *argv[])
 
     mosquitto_loop_forever(context.mosq, -1, 1);
 
-
+#if USE_LTE_MODEM
     lte_at__close(&context);
+#endif
     mosquitto_lib_cleanup();
 
     return 0;
