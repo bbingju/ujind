@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -142,6 +143,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
     }
 }
 
+pid_t child_player = -1;
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
@@ -173,19 +175,33 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 
     if (_get_file(url, fn) == 0) {
 	/* broadcast(fn); */
-	char *cmd = NULL;
-	asprintf(&cmd, "mpg123 %s", fn);
-	system(cmd);
-	free(cmd);
-	remove(fn);
-	printf("%s is deleted.\n", fn);
 
-	char retval[128] = "ok";
-	int rc = mosquitto_publish(ctx->mosq, NULL, 
-				   _get_response_topic(ctx), strlen(retval) + 1, retval, 0, false);
-        if (rc != MOSQ_ERR_SUCCESS) {
-	    fprintf(stderr, "%s\n", mosquitto_strerror(rc));
-        }
+	switch (child_player = fork()) {
+	case -1:
+	    LOGE("forking error\n");
+	    goto _ret;
+
+	case 0:	{		/* child */
+	    char *newargv[] = { "/usr/bin/mpg123", NULL, NULL };
+	    /* char *newargv[] = { "/usr/bin/maplay_simple", NULL, NULL }; */
+	    char *newenviron[] = { NULL };
+	    newargv[1] = fn;
+	    execve(newargv[0], newargv, newenviron);
+	    perror("execve");
+	    break;
+	}
+
+	default: {
+	    char retval[128] = { 0 };
+	    sprintf(retval, "%d", child_player);
+	    int rc = mosquitto_publish(ctx->mosq, NULL, _get_response_topic(ctx),
+				       strlen(retval) + 1, retval, 0, false);
+	    if (rc != MOSQ_ERR_SUCCESS) {
+		fprintf(stderr, "%s\n", mosquitto_strerror(rc));
+	    }
+	    break;
+	}
+	}
     }
 
 _ret:
