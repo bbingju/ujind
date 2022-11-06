@@ -10,4 +10,7 @@ char* conf__lte_modem_fake_number();
 char* conf__lte_modem_serial_port();
 int conf__lte_modem_serial_baudrate();
 
+char* conf__audiosel_serial_port();
+int conf__audiosel_serial_baudrate();
+
 #endif /* CONF_H */

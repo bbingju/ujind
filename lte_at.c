@@ -56,7 +56,7 @@ int lte_at__send(struct context *ctx, const char* cmd)
     unsigned char c;
     int i = 0;
     do {
-	ret = serial_read(ctx->lte_at, &c, 500);
+	ret = serial_read(ctx->lte_at, &c, 300);
 	if (ret < 0) {
 	    LOGE("Serial_read error\n");
 	    return -1;

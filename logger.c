@@ -67,7 +67,7 @@ static inline void print_prefix(char level, char * module)
 
 void Platform_LOG(char level, char * module, char * format, va_list args)
 {
-//    print_prefix(level, module);
+    //print_prefix(level, module);
     vprintf(format, args);
 }
 

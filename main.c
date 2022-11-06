@@ -7,6 +7,7 @@
 #if USE_LTE_MODEM
 #include "lte_at.h"
 #endif
+#include "mcu_cmd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,10 +23,6 @@
 #include "logger.h"
 
 
-/* #define DEFAULT_VAL_SERVER_ADDRESS "121.191.71.114" */
-
-/* const char* ENV_KEY_SERVER_ADDRESS = "UJIN_SERVER_ADDR"; */
-
 struct context context;
 
 static int _get_file(const char *url, const char *filename)
@@ -37,7 +34,7 @@ static int _get_file(const char *url, const char *filename)
 
     CURL *curl = curl_easy_init();
     if (!curl) {
-	fprintf(stderr, "error: curl_easy_init\n");
+	fprintf(stderr, "curl_easy_init error\n");
 	return -1;
     }
 
@@ -58,7 +55,7 @@ static int _get_file(const char *url, const char *filename)
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     CURLcode res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
-	fprintf(stderr, "%s\n", curl_easy_strerror(res));
+	LOGE("%s\n", curl_easy_strerror(res));
     }
 
     fclose(file);
@@ -137,7 +134,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 	}
     }
     if (have_subscription == false) {
-	LOGE("Error: All subscriptions rejected.\n");
+	LOGE("error: All subscriptions rejected.\n");
 	mosquitto_disconnect(mosq);
     }
 }
@@ -148,8 +145,8 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 {
     struct context *ctx = obj;
     char *url = NULL;
-    char *fn = NULL;
     int ret;
+    char* fn = "/tmp/bc.mp3";
 
     LOGD("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
 
@@ -166,49 +163,44 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 	goto _ret;
     }
 
-    ret = asprintf(&fn, "/tmp/%s.mp3", (char *)msg->payload);
-    if (ret == -1) {
-	perror("asprintf");
+    if (_get_file(url, fn) < 0) {
 	goto _ret;
     }
 
-    if (_get_file(url, fn) == 0) {
-	/* broadcast(fn); */
+    /* Send a command to the mcu for selecting audio path */
+    mcu_cmd_t cmd = {.type = MCU_CMD_AUDIOSEL,
+                     .u = { .audiosel = AUDIOSEL_OUT, }};
+    mcu_cmd__send(&context, &cmd);
 
-	switch (child_player = fork()) {
-	case -1:
-	    LOGE("forking error\n");
-	    goto _ret;
+    switch (child_player = fork()) {
+    case -1:
+	LOGE("forking error\n");
+	goto _ret;
 
-	case 0:	{		/* child */
-	    char *newargv[] = { "/usr/bin/mpg123", NULL, NULL };
-	    /* char *newargv[] = { "/usr/bin/maplay_simple", NULL, NULL }; */
-	    char *newenviron[] = { NULL };
-	    newargv[1] = fn;
-	    execve(newargv[0], newargv, newenviron);
-	    perror("execve");
-	    break;
-	}
+    case 0:	{		/* child */
+	char *newargv[] = { "/usr/bin/mpg123", NULL, NULL };
+	char *newenviron[] = { NULL };
+	newargv[1] = fn;
+	execve(newargv[0], newargv, newenviron);
+	perror("execve");
+	break;
+    }
 
-	default: {
-	    char retval[128] = { 0 };
-	    sprintf(retval, "%d", child_player);
-	    int rc = mosquitto_publish(ctx->mosq, NULL, _get_response_topic(ctx),
-				       strlen(retval) + 1, retval, 0, false);
-	    if (rc != MOSQ_ERR_SUCCESS) {
-		LOGE("%s\n", mosquitto_strerror(rc));
-	    }
-	    break;
+    default: {
+	char retval[128] = { 0 };
+	sprintf(retval, "%d", child_player);
+	int rc = mosquitto_publish(ctx->mosq, NULL, _get_response_topic(ctx),
+				   strlen(retval) + 1, retval, 0, false);
+	if (rc != MOSQ_ERR_SUCCESS) {
+	    LOGE("%s\n", mosquitto_strerror(rc));
 	}
-	}
+	break;
+    }
     }
 
 _ret:
     if (url)
 	free(url);
-
-    if (fn)
-	free(fn);
 }
 
 
@@ -227,8 +219,20 @@ void _on_received_lte_at(struct context *ctx, char *key, char *value)
 
 int main(int argc, char *argv[])
 {
+    if (argc > 1) {
+	LOGI("Delay %d sec before starting.\n", atoi(argv[1]));
+        sleep(atoi(argv[1]));
+    }
+
+    if (mcu_cmd__open(&context, NULL) < 0) {
+	fprintf(stderr, "mcu_cmd__open error\n");
+	exit(EXIT_FAILURE);
+    }
+
 #if USE_LTE_MODEM
-    lte_at__open(&context, _on_received_lte_at);
+        if (lte_at__open(&context, _on_received_lte_at) < 0) {
+	exit(EXIT_FAILURE);
+    }
     lte_at__send(&context, "AT$$SHORT_NUM?");
 #endif
 
@@ -237,7 +241,7 @@ int main(int argc, char *argv[])
     if ((context.mosq = mosquitto_new(NULL, true, &context)) == NULL) {
 	perror("mosquitto_new error.");
 	mosquitto_lib_cleanup();
-	return -1;
+	exit(EXIT_FAILURE);
     }
 
     mosquitto_connect_callback_set(context.mosq, on_connect);
@@ -247,16 +251,18 @@ int main(int argc, char *argv[])
     int rc = mosquitto_connect(context.mosq, conf__mqtt_broker_host(), 1883, 60);
     if(rc != MOSQ_ERR_SUCCESS){
 	mosquitto_destroy(context.mosq);
-	LOGE("Error: %s\n", mosquitto_strerror(rc));
-	return 1;
+	LOGE("mosquitto_connect error: %s\n", mosquitto_strerror(rc));
+	exit(EXIT_FAILURE);
     }
 
     mosquitto_loop_forever(context.mosq, -1, 1);
+
+    mcu_cmd__close(&context);
 
 #if USE_LTE_MODEM
     lte_at__close(&context);
 #endif
     mosquitto_lib_cleanup();
 
-    return 0;
+    exit(EXIT_SUCCESS);
 }

@@ -3,8 +3,9 @@ Description=UJIN Tech System Service
 After=network.target sound.target
 
 [Service]
+Type=simple
 User=root
-ExecStart=/usr/bin/ujind
+ExecStart=/usr/bin/ujind 15
 Restart=always
 RestartSec=3s
 

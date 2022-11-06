@@ -7,6 +7,8 @@
 struct context {
     struct mosquitto *mosq;
     serial_t *lte_at;
+    serial_t *mcu_cmd;
+
     char *lte_modem_number;
     char *req_topic;
     char *res_topic;

@@ -134,3 +134,32 @@ int conf__lte_modem_serial_baudrate()
 
     return baudrate.u.b;
 }
+
+char *conf__audiosel_serial_port()
+{
+    CHECK_TBL_INIT();
+
+    toml_datum_t port = toml_string_in(toml_table_in(conf_tbl, "audiosel"), "serial_port");
+    if (!port.ok) {
+	LOGW("cannot read audiosel.serial_port\n");
+    } else {
+	LOGD("audiosel.serial_port: %s\n", port.u.s);
+    }
+
+    return port.u.s;
+}
+
+int conf__audiosel_serial_baudrate()
+{
+    CHECK_TBL_INIT();
+
+    const toml_table_t *arr = toml_table_in(conf_tbl, "audiosel");
+    toml_datum_t baudrate = toml_int_in(arr, "serial_baudrate");
+    if (!baudrate.ok) {
+	LOGW("cannot read audiosel.serial_baudrate\n");
+    } else {
+	LOGD("audiosel.serial_baudrate: %d\n", baudrate.u.b);
+    }
+
+    return baudrate.u.b;
+}
